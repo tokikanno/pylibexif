@@ -171,6 +171,8 @@ EXIF_FORMAT_NAME_LOOKUP = dict((getattr(ExifFormats, x), x) for x in EXIF_FORMAT
 # defining functions result type
 _exif_data_new_from_file = _libexif.exif_data_new_from_file
 _exif_data_new_from_file.restype = POINTER(_ExifData)
+_exif_data_new_from_data = _libexif.exif_data_new_from_data
+_exif_data_new_from_data.restype = POINTER(_ExifData)
 _exif_content_get_entry = _libexif.exif_content_get_entry
 _exif_content_get_entry.restype = POINTER(_ExifEntry)
 
@@ -229,6 +231,12 @@ class Exif(object):
         exifdata = _exif_data_new_from_file(c_char_p(filename))
         return ExifData(exifdata) if exifdata else None
 
+    @classmethod
+    def exif_data_from_data(cls, data):
+        exifdata = _exif_data_new_from_data(data, c_uint(len(data)))
+        return ExifData(exifdata) if exifdata else None
+
+
 if __name__ == '__main__':
     # testing goes here
     import sys
@@ -245,12 +253,14 @@ if __name__ == '__main__':
         dump = data.dump_exif_entry(tag)
         if dump:
             print dump
-        """
-        entry = data.get_exif_entry(tag)
-        if entry:
-            print name
-        else:
-            pass
-            # print 'no entry for %s(0x%X) found' % (name, tag)
-        """
+    data.free()
+
+    print '--------------------------------------------------'
+
+    data = Exif.exif_data_from_data(open(sys.argv[1]).read())
+    for name in EXIF_TAG_NAMES:
+        tag = getattr(ExifTags, name)
+        dump = data.dump_exif_entry(tag)
+        if dump:
+            print dump
     data.free()

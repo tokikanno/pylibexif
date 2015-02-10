@@ -146,24 +146,27 @@ class ExifTags(object):
     EXIF_TAG_PRINT_IMAGE_MATCHING = 0xc4a5
     EXIF_TAG_PADDING = 0xea1c
 
-"""
-EXIF_FORMATS = (
-    EXIF_FORMAT_BYTE,  # 1
-    EXIF_FORMAT_ASCII,
-    EXIF_FORMAT_SHORT,
-    EXIF_FORMAT_LONG,
-    EXIF_FORMAT_RATIONAL,
-    EXIF_FORMAT_SBYTE,
-    EXIF_FORMAT_UNDEFINED,
-    EXIF_FORMAT_SSHORT,
-    EXIF_FORMAT_SLONG,
-    EXIF_FORMAT_SRATIONAL,
-    EXIF_FORMAT_FLOAT,
-    EXIF_FORMAT_DOUBLE,
-)
-"""
-EXIF_TAG_NAMES = filter(lambda x: x.startswith('EXIF_'), dir(ExifTags))
 
+class ExifFormats(object):
+    EXIF_FORMAT_BYTE = 1  # 1
+    EXIF_FORMAT_ASCII = 2
+    EXIF_FORMAT_SHORT = 3
+    EXIF_FORMAT_LONG = 4
+    EXIF_FORMAT_RATIONAL = 5
+    EXIF_FORMAT_SBYTE = 6
+    EXIF_FORMAT_UNDEFINED = 7
+    EXIF_FORMAT_SSHORT = 8
+    EXIF_FORMAT_SLONG = 9
+    EXIF_FORMAT_SRATIONAL = 10
+    EXIF_FORMAT_FLOAT = 11
+    EXIF_FORMAT_DOUBLE = 12
+
+
+# auto gen lookup tables
+EXIF_TAG_NAMES = filter(lambda x: x.startswith('EXIF_'), dir(ExifTags))
+EXIF_TAG_NAME_LOOKUP = dict((getattr(ExifTags, x), x) for x in EXIF_TAG_NAMES)
+EXIF_FORMAT_NAMES = filter(lambda x: x.startswith('EXIF_'), dir(ExifFormats))
+EXIF_FORMAT_NAME_LOOKUP = dict((getattr(ExifFormats, x), x) for x in EXIF_FORMAT_NAMES)
 
 # defining functions result type
 _exif_data_new_from_file = _libexif.exif_data_new_from_file
@@ -183,26 +186,35 @@ class ExifData(object):
         return self._byte_order
 
     def get_exif_entry(self, tag):
+        """
+        get a ExifEntry by tag.
+        if found, a pointer of _ExifEntry will be returned
+        if not found, None will be returned.
+        """
         result = None
         for p in self._data[0].ifd:
             result = _exif_content_get_entry(p, c_uint(tag))
             if result:
                 break
 
-        if result:
-            result = result[0]
-            print 'tag = 0x%X, format = %d' % (result.tag, result.format)
-
-            value = None
-            if result.format == 3:
-                value = _libexif.exif_get_short(result.data, c_uint(self._byte_order))
-
-            if value is not None:
-                print 'value = %s' % value
-
         return result
 
+    def dump_exif_entry(self, tag):
+        """
+        find exif entry by tag, and dump as string
+        """
+        entry = self.get_exif_entry(tag)
+        if not entry:
+            return
+
+        buf = (c_ubyte * 1024)()
+        _libexif.exif_entry_get_value(entry, byref(buf), c_uint(sizeof(buf)))
+        return '%s - %s' % (EXIF_TAG_NAME_LOOKUP.get(tag), bytearray(buf))
+
     def free(self):
+        """
+        Do not forget call free to release your exif data
+        """
         if self._data:
             _libexif.exif_data_free(self._data)
             self._data = None
@@ -219,15 +231,26 @@ class Exif(object):
 
 if __name__ == '__main__':
     # testing goes here
-    data = Exif.exif_data_from_file('sample.jpg')
-    print data.get_byte_order()
+    import sys
+
+    if len(sys.argv) != 2:
+        print 'Usage:\n\t%s <filename>' % __file__
+        sys.exit(-1)
+
+    data = Exif.exif_data_from_file(sys.argv[1])
+    print 'EXIF byte order = %s' % data.get_byte_order()
 
     for name in EXIF_TAG_NAMES:
         tag = getattr(ExifTags, name)
+        dump = data.dump_exif_entry(tag)
+        if dump:
+            print dump
+        """
         entry = data.get_exif_entry(tag)
         if entry:
             print name
-        if not entry:
-            print 'no entry for %s(0x%X) found' % (name, tag)
-        print
+        else:
+            pass
+            # print 'no entry for %s(0x%X) found' % (name, tag)
+        """
     data.free()

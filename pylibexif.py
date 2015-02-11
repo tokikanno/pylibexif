@@ -1,7 +1,14 @@
 from ctypes import *
+import platform
 
+_system = platform.system().lower()
 
-_libexif = CDLL('libexif.so')
+if _system == 'linux':
+    _libexif = CDLL('libexif.so')
+# elif _system == 'darwin':
+#     _libexif = CDLL('libexif.dylib')
+else:
+    raise Exception('Sorry, your system "%s" is not supported yet!' % _system)
 
 EXIF_IFD_COUNT = 5
 
@@ -193,6 +200,7 @@ class ExifData(object):
         if found, a pointer of _ExifEntry will be returned
         if not found, None will be returned.
         """
+        import pdb; pdb.set_trace()
         result = None
         for p in self._data[0].ifd:
             result = _exif_content_get_entry(p, c_uint(tag))

@@ -200,7 +200,6 @@ class ExifData(object):
         if found, a pointer of _ExifEntry will be returned
         if not found, None will be returned.
         """
-        import pdb; pdb.set_trace()
         result = None
         for p in self._data[0].ifd:
             result = _exif_content_get_entry(p, c_uint(tag))
@@ -265,10 +264,13 @@ if __name__ == '__main__':
 
     print '--------------------------------------------------'
 
-    data = Exif.exif_data_from_data(open(sys.argv[1]).read())
+    filedata = open(sys.argv[1]).read()
+    data = Exif.exif_data_from_data(filedata)
     for name in EXIF_TAG_NAMES:
         tag = getattr(ExifTags, name)
         dump = data.dump_exif_entry(tag)
         if dump:
             print dump
     data.free()
+
+    # raw_input("Press Enter to continue...")

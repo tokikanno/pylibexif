@@ -199,6 +199,9 @@ class ExifData(object):
         get a ExifEntry by tag.
         if found, a pointer of _ExifEntry will be returned
         if not found, None will be returned.
+
+        the returned entry is just a pointer into part of this ExifData structure and 
+        should NOT BE FREEED or UNREFERENCED !!!!
         """
         result = None
         for p in self._data[0].ifd:
@@ -228,6 +231,9 @@ class ExifData(object):
             _libexif.exif_data_free(self._data)
             self._data = None
             self._byte_order = None
+
+    def __del__(self):
+        self.free()
 
 
 class Exif(object):

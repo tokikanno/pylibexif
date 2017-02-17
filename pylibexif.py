@@ -268,7 +268,9 @@ if __name__ == '__main__':
             print dump
     data.free()
 
-    print '--------------------------------------------------'
+    sys.exit()
+
+    print '-- Memory Leaktest -----------------------------'
 
     filedata = open(sys.argv[1]).read()
     data = Exif.exif_data_from_data(filedata)

@@ -5,8 +5,8 @@ _system = platform.system().lower()
 
 if _system == 'linux':
     _libexif = CDLL('libexif.so')
-# elif _system == 'darwin':
-#     _libexif = CDLL('libexif.dylib')
+elif _system == 'darwin':
+    _libexif = CDLL('libexif.dylib')
 else:
     raise Exception('Sorry, your system "%s" is not supported yet!' % _system)
 
@@ -18,19 +18,19 @@ class _ExifEntry(Structure):
         ('tag', c_uint),
         ('format', c_uint),
         ('components', c_uint),
-        ('data', c_void_p),
+        ('data', POINTER(c_void_p)),
         ('size', c_uint),
-        ('parent', c_void_p),
-        ('priv', c_void_p),
+        ('parent', POINTER(c_void_p)),
+        ('priv', POINTER(c_void_p)),
     ]
 
 
 class _ExifData(Structure):
     _fields_ = [
-        ('ifd', c_void_p * EXIF_IFD_COUNT),
-        ('data', c_void_p),
+        ('ifd', POINTER(c_void_p) * EXIF_IFD_COUNT),
+        ('data', POINTER(c_void_p)),
         ('size', c_uint),
-        ('priv', c_void_p),
+        ('priv', POINTER(c_void_p)),
     ]
 
 
@@ -200,7 +200,7 @@ class ExifData(object):
         if found, a pointer of _ExifEntry will be returned
         if not found, None will be returned.
         """
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         result = None
         for p in self._data[0].ifd:
             result = _exif_content_get_entry(p, c_uint(tag))
